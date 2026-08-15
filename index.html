@@ -1,0 +1,1219 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Smart PDF Studio Pro</title>
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#12b0a6">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="PDF Studio Pro">
+<link rel="icon" href="icon-192.png">
+<link rel="apple-touch-icon" href="icon-192.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf-lib/1.17.1/pdf-lib.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+<style>
+  :root{
+    --bg:#f5f9fb;
+    --bg-2:#eef6f8;
+    --white:#ffffff;
+    --ink:#0b2233;
+    --ink-soft:#4c6273;
+    --line: rgba(11,34,51,0.08);
+    --blue:#3b9ce0;
+    --blue-deep:#1f6fb2;
+    --teal:#12b0a6;
+    --emerald:#12b981;
+    --amber:#e0a13b;
+    --danger:#e0563b;
+    --glass: rgba(255,255,255,0.62);
+    --glass-border: rgba(255,255,255,0.9);
+    --shadow: 0 20px 60px -20px rgba(18,80,110,0.25);
+    --radius: 20px;
+    --grad-signature: linear-gradient(135deg, var(--blue) 0%, var(--teal) 52%, var(--emerald) 100%);
+  }
+  *{box-sizing:border-box; margin:0; padding:0;}
+  html,body{height:100%;}
+  body{
+    font-family:'Inter', sans-serif;
+    background:
+      radial-gradient(1100px 600px at 85% -10%, rgba(59,156,224,0.14), transparent 60%),
+      radial-gradient(900px 500px at -10% 20%, rgba(18,185,129,0.10), transparent 55%),
+      var(--bg);
+    color:var(--ink);
+    min-height:100vh;
+    -webkit-font-smoothing:antialiased;
+  }
+  h1,h2,h3,.display{ font-family:'Space Grotesk', sans-serif; letter-spacing:-0.01em; }
+  .mono{ font-family:'JetBrains Mono', monospace; }
+  ::selection{ background: rgba(18,176,166,0.25); }
+
+  a{color:inherit;}
+  button{ font-family:inherit; cursor:pointer; border:none; background:none; color:inherit; }
+  input{ font-family:inherit; }
+
+  .wrap{ max-width:1180px; margin:0 auto; padding: 28px 24px 80px; }
+
+  /* ---------- Top bar ---------- */
+  .topbar{ display:flex; align-items:center; justify-content:space-between; margin-bottom:34px; flex-wrap:wrap; gap:14px;}
+  .brand{ display:flex; align-items:center; gap:12px; }
+  .brand-mark{
+    width:42px; height:42px; border-radius:12px; flex-shrink:0;
+    background: var(--grad-signature);
+    display:flex; align-items:center; justify-content:center;
+    box-shadow: 0 8px 20px -6px rgba(18,150,150,0.55);
+  }
+  .brand-mark svg{ width:22px; height:22px; }
+  .brand-text h1{ font-size:19px; font-weight:700; line-height:1.1; }
+  .brand-text span{ font-size:12px; color:var(--ink-soft); letter-spacing:0.02em; }
+  .privacy-pill{
+    display:flex; align-items:center; gap:8px;
+    font-size:12.5px; font-weight:500; color:var(--blue-deep);
+    background: rgba(59,156,224,0.10); border:1px solid rgba(59,156,224,0.25);
+    padding:8px 14px; border-radius:999px;
+  }
+  .privacy-pill .dot{ width:7px; height:7px; border-radius:50%; background:var(--emerald); box-shadow:0 0 0 3px rgba(18,185,129,0.25); }
+
+  /* ---------- Mode tabs ---------- */
+  .tabs{ display:flex; gap:10px; margin-bottom:26px; background:var(--white); padding:6px; border-radius:16px; border:1px solid var(--line); width:fit-content; box-shadow: var(--shadow); }
+  .tab-btn{
+    padding:11px 20px; border-radius:12px; font-weight:600; font-size:14.5px; color:var(--ink-soft);
+    display:flex; align-items:center; gap:8px; transition: all .25s ease;
+  }
+  .tab-btn.active{ background: var(--grad-signature); color:#fff; box-shadow: 0 8px 18px -8px rgba(18,150,150,0.6); }
+  .tab-btn svg{ width:17px; height:17px; }
+
+  .panel{ display:none; }
+  .panel.active{ display:block; animation: fadein .35s ease; }
+  @keyframes fadein{ from{opacity:0; transform:translateY(6px);} to{opacity:1; transform:translateY(0);} }
+
+  /* ---------- Glass card ---------- */
+  .card{
+    background: var(--glass);
+    -webkit-backdrop-filter: blur(18px); backdrop-filter: blur(18px);
+    border:1px solid var(--glass-border);
+    border-radius: var(--radius);
+    box-shadow: var(--shadow);
+    padding:26px;
+  }
+  .card + .card{ margin-top:22px; }
+  .card-title{ font-size:15px; font-weight:700; display:flex; align-items:center; gap:9px; margin-bottom:16px; }
+  .card-title .num{
+    width:24px; height:24px; border-radius:8px; background:var(--grad-signature); color:#fff;
+    font-size:12px; display:flex; align-items:center; justify-content:center; font-weight:700;
+  }
+
+  /* ---------- Dropzone ---------- */
+  .dropzone{
+    border:2px dashed rgba(31,111,178,0.35);
+    border-radius:18px;
+    background: linear-gradient(180deg, rgba(59,156,224,0.05), rgba(18,185,129,0.04));
+    padding:44px 20px;
+    text-align:center;
+    transition: all .2s ease;
+    cursor:pointer;
+  }
+  .dropzone.drag{ border-color: var(--teal); background: rgba(18,176,166,0.10); transform: scale(1.005); }
+  .dropzone svg{ width:40px; height:40px; color:var(--blue-deep); margin-bottom:10px; }
+  .dropzone h3{ font-size:16px; font-weight:600; margin-bottom:5px; }
+  .dropzone p{ font-size:13px; color:var(--ink-soft); }
+  .dropzone .browse{ color:var(--blue-deep); font-weight:600; text-decoration:underline; }
+
+  /* ---------- Image grid ---------- */
+  .img-grid{ display:grid; grid-template-columns:repeat(auto-fill, minmax(150px,1fr)); gap:14px; margin-top:20px; }
+  .img-tile{
+    position:relative; border-radius:14px; overflow:hidden; background:#fff;
+    border:1px solid var(--line); aspect-ratio: 3/4; cursor:grab;
+    box-shadow: 0 6px 16px -8px rgba(11,34,51,0.18);
+    transition: transform .18s ease, box-shadow .18s ease;
+    touch-action:pan-y;
+  }
+  .img-tile.dragging{ opacity:0.35; }
+  .img-tile.drop-target{ outline:2px dashed var(--teal); outline-offset:2px; }
+  .img-tile img{ width:100%; height:100%; object-fit:cover; display:block; transition: transform .25s ease; pointer-events:none; -webkit-user-drag:none; }
+  .img-tile .order-badge{
+    position:absolute; top:8px; left:8px; background:rgba(11,34,51,0.72); color:#fff;
+    font-size:11px; font-weight:700; padding:3px 8px; border-radius:999px; backdrop-filter: blur(4px);
+  }
+  .img-tile .tile-actions{
+    position:absolute; bottom:0; left:0; right:0; display:flex; justify-content:space-between; gap:4px;
+    padding:6px; background:linear-gradient(0deg, rgba(11,34,51,0.78), rgba(11,34,51,0.15) 70%, transparent);
+  }
+  .img-tile .tile-actions .grp{ display:flex; gap:4px; }
+  .tile-btn{
+    width:26px; height:26px; border-radius:8px; background:rgba(255,255,255,0.94); color:var(--ink);
+    display:flex; align-items:center; justify-content:center; flex-shrink:0;
+  }
+  .tile-btn:hover{ background:#fff; }
+  .tile-btn:active{ transform: scale(0.92); }
+  .tile-btn:disabled{ opacity:0.35; }
+  .tile-btn.danger:hover{ color:var(--danger); }
+  .tile-btn svg{ width:14px; height:14px; }
+
+  .grid-toolbar{ display:flex; align-items:center; justify-content:space-between; margin-top:16px; flex-wrap:wrap; gap:10px; }
+  .grid-toolbar .count{ font-size:13px; color:var(--ink-soft); }
+  .ghost-btn{
+    font-size:13px; font-weight:600; padding:9px 16px; border-radius:10px; color:var(--ink-soft);
+    border:1px solid var(--line); background:#fff; display:flex; align-items:center; gap:7px;
+  }
+  .ghost-btn:hover{ color:var(--danger); border-color: rgba(224,86,59,0.3); background: rgba(224,86,59,0.05); }
+
+  /* ---------- Upload existing pdf ---------- */
+  .file-chip{
+    display:flex; align-items:center; gap:12px; background:#fff; border:1px solid var(--line);
+    border-radius:14px; padding:14px 16px; margin-top:18px;
+  }
+  .file-chip .ic{ width:38px; height:38px; border-radius:10px; background: rgba(59,156,224,0.12); display:flex; align-items:center; justify-content:center; flex-shrink:0;}
+  .file-chip .ic svg{ width:19px; height:19px; color:var(--blue-deep); }
+  .file-chip .meta{ flex:1; min-width:0; }
+  .file-chip .meta .name{ font-size:13.5px; font-weight:600; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .file-chip .meta .sub{ font-size:12px; color:var(--ink-soft); }
+  .file-chip button{ color:var(--ink-soft); }
+  .file-chip button:hover{ color:var(--danger); }
+
+  /* ---------- Size target ---------- */
+  .preset-row{ display:flex; flex-wrap:wrap; gap:9px; margin-bottom:16px; }
+  .preset-btn{
+    font-size:13px; font-weight:600; padding:9px 15px; border-radius:11px;
+    border:1px solid var(--line); background:#fff; color:var(--ink-soft);
+    transition: all .15s ease;
+  }
+  .preset-btn:hover{ border-color: var(--teal); color:var(--teal); }
+  .preset-btn.active{ background: var(--grad-signature); color:#fff; border-color:transparent; box-shadow: 0 8px 16px -8px rgba(18,150,150,0.55); }
+
+  .custom-size-row{ display:flex; align-items:center; gap:10px; }
+  .size-input-wrap{ flex:1; position:relative; }
+  .size-input-wrap input{
+    width:100%; padding:13px 90px 13px 16px; border-radius:12px; border:1.5px solid var(--line);
+    font-size:15px; font-weight:600; color:var(--ink); background:#fff;
+  }
+  .size-input-wrap input:focus{ outline:none; border-color:var(--teal); box-shadow:0 0 0 4px rgba(18,176,166,0.12); }
+  .unit-toggle{ position:absolute; right:6px; top:6px; bottom:6px; display:flex; background:var(--bg-2); border-radius:8px; padding:3px; }
+  .unit-btn{ padding:0 12px; font-size:12px; font-weight:700; border-radius:6px; color:var(--ink-soft); }
+  .unit-btn.active{ background:#fff; color:var(--blue-deep); box-shadow:0 2px 6px rgba(11,34,51,0.12); }
+
+  .generate-btn{
+    margin-top:20px; width:100%; padding:16px; border-radius:14px; font-size:15.5px; font-weight:700;
+    color:#fff; background: var(--grad-signature); display:flex; align-items:center; justify-content:center; gap:10px;
+    box-shadow: 0 14px 30px -12px rgba(18,150,150,0.55);
+    transition: transform .15s ease, box-shadow .15s ease;
+  }
+  .generate-btn:hover:not(:disabled){ transform: translateY(-1px); box-shadow: 0 18px 34px -12px rgba(18,150,150,0.65); }
+  .generate-btn:disabled{ opacity:0.5; cursor:not-allowed; }
+  .generate-btn svg{ width:18px; height:18px; }
+  .generate-btn.busy svg{ animation: spin 1s linear infinite; }
+  @keyframes spin{ to{ transform: rotate(360deg); } }
+
+  /* ---------- Dashboard ---------- */
+  .dash-grid{ display:grid; grid-template-columns: repeat(4, 1fr); gap:14px; }
+  @media (max-width:720px){ .dash-grid{ grid-template-columns: repeat(2,1fr); } }
+  .stat-box{ background:#fff; border:1px solid var(--line); border-radius:14px; padding:16px; }
+  .stat-box .label{ font-size:11.5px; text-transform:uppercase; letter-spacing:0.06em; color:var(--ink-soft); font-weight:600; margin-bottom:6px; }
+  .stat-box .val{ font-size:20px; font-weight:700; font-family:'Space Grotesk', sans-serif; }
+  .stat-box .val.blue{ color:var(--blue-deep); }
+  .stat-box .val.teal{ color:var(--teal); }
+  .stat-box .val.emerald{ color:var(--emerald); }
+
+  .progress-track{ height:10px; border-radius:999px; background: var(--bg-2); overflow:hidden; margin:18px 0 6px; }
+  .progress-fill{ height:100%; border-radius:999px; background: var(--grad-signature); width:0%; transition: width .3s ease; }
+  .progress-label{ display:flex; justify-content:space-between; font-size:12.5px; color:var(--ink-soft); }
+  .progress-label .stage{ font-weight:600; color:var(--ink); }
+
+  /* ---------- Gauge (signature element) ---------- */
+  .gauge-wrap{ display:flex; align-items:center; gap:26px; flex-wrap:wrap; }
+  .gauge{ position:relative; width:132px; height:132px; flex-shrink:0; }
+  .gauge svg{ width:100%; height:100%; transform: rotate(-90deg); }
+  .gauge-bg{ fill:none; stroke: rgba(11,34,51,0.07); stroke-width:10; }
+  .gauge-fill{ fill:none; stroke-width:10; stroke-linecap:round; transition: stroke-dashoffset .5s ease, stroke .4s ease; }
+  .gauge-center{ position:absolute; inset:0; display:flex; flex-direction:column; align-items:center; justify-content:center; }
+  .gauge-center .pct{ font-size:24px; font-weight:700; font-family:'Space Grotesk', sans-serif; }
+  .gauge-center .sub{ font-size:10.5px; color:var(--ink-soft); font-weight:600; text-transform:uppercase; letter-spacing:0.04em; }
+  .gauge-meta{ flex:1; min-width:220px; }
+  .gauge-meta .row{ display:flex; justify-content:space-between; padding:9px 0; border-bottom:1px dashed var(--line); font-size:13.5px; }
+  .gauge-meta .row:last-child{ border-bottom:none; }
+  .gauge-meta .row .k{ color:var(--ink-soft); }
+  .gauge-meta .row .v{ font-weight:700; }
+  .badge-status{ display:inline-flex; align-items:center; gap:6px; font-size:12px; font-weight:700; padding:5px 11px; border-radius:999px; margin-top:6px; }
+  .badge-status.ok{ background: rgba(18,185,129,0.12); color:#0d8f63; }
+  .badge-status.warn{ background: rgba(224,161,59,0.14); color:#9a6c14; }
+
+  /* ---------- Download center ---------- */
+  .dl-grid{ display:grid; grid-template-columns: 1.1fr 1fr; gap:22px; }
+  @media (max-width:820px){ .dl-grid{ grid-template-columns:1fr; } }
+  .dl-stats{ display:grid; grid-template-columns:1fr 1fr; gap:12px; }
+  .dl-stat{ background:#fff; border:1px solid var(--line); border-radius:14px; padding:16px; text-align:center; }
+  .dl-stat .label{ font-size:11px; color:var(--ink-soft); font-weight:600; text-transform:uppercase; letter-spacing:.05em; margin-bottom:6px;}
+  .dl-stat .val{ font-size:19px; font-weight:700; font-family:'Space Grotesk', sans-serif; }
+  .dl-actions{ display:flex; flex-direction:column; gap:10px; justify-content:center; }
+  .btn-primary{
+    padding:15px; border-radius:13px; font-weight:700; font-size:14.5px; color:#fff;
+    background: var(--grad-signature); display:flex; align-items:center; justify-content:center; gap:9px;
+    box-shadow: 0 12px 26px -12px rgba(18,150,150,0.55);
+  }
+  .btn-secondary{
+    padding:14px; border-radius:13px; font-weight:600; font-size:14px; color:var(--ink);
+    background:#fff; border:1.5px solid var(--line); display:flex; align-items:center; justify-content:center; gap:9px;
+  }
+  .btn-secondary:hover{ border-color: var(--blue); color:var(--blue-deep); }
+  .btn-primary svg, .btn-secondary svg{ width:16px; height:16px; }
+
+  /* ---------- Toast / errors ---------- */
+  #toast-stack{ position:fixed; top:20px; right:20px; z-index:999; display:flex; flex-direction:column; gap:10px; max-width:340px; }
+  .toast{
+    background:#fff; border-radius:12px; padding:13px 15px; box-shadow: var(--shadow);
+    border-left:4px solid var(--danger); font-size:13px; display:flex; gap:10px; align-items:flex-start;
+    animation: slidein .25s ease;
+  }
+  .toast.info{ border-left-color: var(--blue); }
+  .toast.success{ border-left-color: var(--emerald); }
+  .toast svg{ width:17px; height:17px; flex-shrink:0; margin-top:1px; }
+  .toast .msg-title{ font-weight:700; margin-bottom:2px; }
+  .toast .msg-body{ color:var(--ink-soft); }
+  @keyframes slidein{ from{ opacity:0; transform:translateX(30px); } to{ opacity:1; transform:translateX(0); } }
+
+  .empty-hint{ font-size:12.5px; color:var(--ink-soft); text-align:center; padding:18px 0 4px; }
+  .rotate-icon{ transform-origin:center; }
+  .footer-note{ text-align:center; font-size:12px; color:var(--ink-soft); margin-top:40px; }
+
+  .sr-only{ position:absolute; width:1px; height:1px; overflow:hidden; clip:rect(0,0,0,0); }
+
+  @media (prefers-reduced-motion: reduce){
+    *{ animation-duration:0.01ms !important; transition-duration:0.01ms !important; }
+  }
+</style>
+</head>
+<body>
+
+<div id="toast-stack"></div>
+
+<div class="wrap">
+
+  <div class="topbar">
+    <div class="brand">
+      <div class="brand-mark">
+        <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M6 2h9l5 5v13a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2z" fill="white" fill-opacity="0.95"/><path d="M14 2v5h5" stroke="#12b0a6" stroke-width="1.4"/><path d="M8 13.5l2 2 4-4.5" stroke="#1f6fb2" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      </div>
+      <div class="brand-text">
+        <h1>Smart PDF Studio Pro</h1>
+        <span>Convert · Compress · Control the exact file size</span>
+      </div>
+    </div>
+    <div class="privacy-pill"><span class="dot"></span> 100% in-browser — nothing leaves your device</div>
+  </div>
+
+  <div class="tabs" role="tablist">
+    <button class="tab-btn active" data-tab="image2pdf" role="tab">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="3"/><circle cx="8.5" cy="9.5" r="1.5"/><path d="M21 15l-5-5L5 21"/></svg>
+      Images → PDF
+    </button>
+    <button class="tab-btn" data-tab="pdf2pdf" role="tab">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 2h9l5 5v13a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2z"/><path d="M14 2v5h5"/></svg>
+      Compress PDF
+    </button>
+  </div>
+
+  <!-- ============= PANEL 1: IMAGE TO PDF ============= -->
+  <div class="panel active" id="panel-image2pdf">
+
+    <div class="card">
+      <div class="card-title"><span class="num">1</span> Add your images</div>
+      <div class="dropzone" id="img-dropzone">
+        <input type="file" id="img-input" accept="image/jpeg,image/jpg,image/pjpeg,image/png,image/webp,.jpg,.jpeg,.png,.webp" multiple class="sr-only" />
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M12 16V4M12 4l-4 4M12 4l4 4"/><path d="M4 16v3a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-3"/></svg>
+        <h3>Drag &amp; drop images here</h3>
+        <p>or <span class="browse">browse from your device</span> — JPG, JPEG, PNG, WEBP</p>
+      </div>
+
+      <div class="img-grid" id="img-grid"></div>
+      <div class="grid-toolbar" id="img-toolbar" style="display:none;">
+        <span class="count" id="img-count">0 images</span>
+        <button class="ghost-btn" id="clear-images">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><path d="M3 6h18M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2m3 0-1 14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2L4 6"/></svg>
+          Clear all
+        </button>
+      </div>
+      <div class="empty-hint" id="img-empty-hint" style="display:none;">Drag to reorder pages · hover a page to rotate or delete</div>
+    </div>
+
+    <div class="card">
+      <div class="card-title"><span class="num">2</span> Target PDF size</div>
+      <div class="preset-row" id="preset-row-1"></div>
+      <div class="custom-size-row">
+        <div class="size-input-wrap">
+          <input type="number" id="target-size-input-1" placeholder="Enter custom size, e.g. 123" min="1" step="any" />
+          <div class="unit-toggle" id="unit-toggle-1">
+            <button class="unit-btn active" data-unit="KB">KB</button>
+            <button class="unit-btn" data-unit="MB">MB</button>
+          </div>
+        </div>
+      </div>
+      <button class="generate-btn" id="generate-btn-1">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M13 2 3 14h8l-1 8 10-12h-8l1-8z"/></svg>
+        Generate compressed PDF
+      </button>
+    </div>
+
+    <div class="card" id="progress-card-1" style="display:none;">
+      <div class="card-title"><span class="num">3</span> Compression dashboard</div>
+      <div class="progress-track"><div class="progress-fill" id="progress-fill-1"></div></div>
+      <div class="progress-label"><span class="stage" id="progress-stage-1">Preparing…</span><span id="progress-pct-1">0%</span></div>
+      <div class="dash-grid" style="margin-top:18px;">
+        <div class="stat-box"><div class="label">Pages</div><div class="val" id="live-pages-1">–</div></div>
+        <div class="stat-box"><div class="label">Image quality</div><div class="val blue" id="live-quality-1">–</div></div>
+        <div class="stat-box"><div class="label">Resolution</div><div class="val teal" id="live-res-1">–</div></div>
+        <div class="stat-box"><div class="label">Estimated size</div><div class="val emerald" id="live-size-1">–</div></div>
+      </div>
+    </div>
+
+    <div class="card" id="result-card-1" style="display:none;"></div>
+
+  </div>
+
+  <!-- ============= PANEL 2: PDF TO PDF ============= -->
+  <div class="panel" id="panel-pdf2pdf">
+
+    <div class="card">
+      <div class="card-title"><span class="num">1</span> Upload a PDF</div>
+      <div class="dropzone" id="pdf-dropzone">
+        <input type="file" id="pdf-input" accept="application/pdf" class="sr-only" />
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M12 16V4M12 4l-4 4M12 4l4 4"/><path d="M4 16v3a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-3"/></svg>
+        <h3>Drag &amp; drop a PDF here</h3>
+        <p>or <span class="browse">browse from your device</span> — single PDF file</p>
+      </div>
+      <div id="pdf-file-chip-wrap"></div>
+    </div>
+
+    <div class="card">
+      <div class="card-title"><span class="num">2</span> Target PDF size</div>
+      <div class="preset-row" id="preset-row-2"></div>
+      <div class="custom-size-row">
+        <div class="size-input-wrap">
+          <input type="number" id="target-size-input-2" placeholder="Enter custom size, e.g. 250" min="1" step="any" />
+          <div class="unit-toggle" id="unit-toggle-2">
+            <button class="unit-btn active" data-unit="KB">KB</button>
+            <button class="unit-btn" data-unit="MB">MB</button>
+          </div>
+        </div>
+      </div>
+      <button class="generate-btn" id="generate-btn-2">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M13 2 3 14h8l-1 8 10-12h-8l1-8z"/></svg>
+        Compress PDF
+      </button>
+    </div>
+
+    <div class="card" id="progress-card-2" style="display:none;">
+      <div class="card-title"><span class="num">3</span> Compression dashboard</div>
+      <div class="progress-track"><div class="progress-fill" id="progress-fill-2"></div></div>
+      <div class="progress-label"><span class="stage" id="progress-stage-2">Preparing…</span><span id="progress-pct-2">0%</span></div>
+      <div class="dash-grid" style="margin-top:18px;">
+        <div class="stat-box"><div class="label">Pages</div><div class="val" id="live-pages-2">–</div></div>
+        <div class="stat-box"><div class="label">Image quality</div><div class="val blue" id="live-quality-2">–</div></div>
+        <div class="stat-box"><div class="label">Resolution</div><div class="val teal" id="live-res-2">–</div></div>
+        <div class="stat-box"><div class="label">Estimated size</div><div class="val emerald" id="live-size-2">–</div></div>
+      </div>
+    </div>
+
+    <div class="card" id="result-card-2" style="display:none;"></div>
+
+  </div>
+
+  <p class="footer-note">Smart PDF Studio Pro runs fully client-side. Files are processed in memory and are never uploaded anywhere.</p>
+</div>
+
+<script>
+(function(){
+"use strict";
+
+/* ============================================================
+   0. SHARED UTILITIES
+============================================================ */
+const LIBS_OK = (typeof PDFLib !== "undefined") && (typeof pdfjsLib !== "undefined");
+if (!LIBS_OK){
+  document.addEventListener("DOMContentLoaded", () => {
+    const banner = document.createElement("div");
+    banner.style.cssText = "max-width:1180px;margin:20px auto 0;padding:16px 20px;border-radius:14px;background:#fdecea;border:1px solid #f3b7ac;color:#8a2c1d;font:600 14px/1.4 Inter,sans-serif;";
+    banner.textContent = "Core PDF libraries could not be loaded from the CDN. Check your internet connection, then reload this page — Smart PDF Studio Pro needs pdf-lib and pdf.js to run.";
+    document.body.prepend(banner);
+    document.querySelectorAll(".generate-btn").forEach(b => b.disabled = true);
+  });
+}
+const PDFDocument = LIBS_OK ? PDFLib.PDFDocument : null;
+if (LIBS_OK) pdfjsLib.GlobalWorkerOptions.workerSrc = "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js";
+
+const $ = (sel, ctx) => (ctx||document).querySelector(sel);
+const $$ = (sel, ctx) => Array.from((ctx||document).querySelectorAll(sel));
+
+function fmtBytes(bytes){
+  if (bytes < 1024) return bytes + " B";
+  if (bytes < 1024*1024) return (bytes/1024).toFixed(1) + " KB";
+  return (bytes/(1024*1024)).toFixed(2) + " MB";
+}
+function fmtKB(bytes){ return Math.round(bytes/1024) + " KB"; }
+
+function toast(type, title, body){
+  const stack = $("#toast-stack");
+  const el = document.createElement("div");
+  el.className = "toast " + type;
+  const icon = type === "success"
+    ? '<svg viewBox="0 0 24 24" fill="none" stroke="#12b981" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="m9 12 2 2 4-4"/></svg>'
+    : type === "info"
+    ? '<svg viewBox="0 0 24 24" fill="none" stroke="#3b9ce0" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4M12 8h.01"/></svg>'
+    : '<svg viewBox="0 0 24 24" fill="none" stroke="#e0563b" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 8v4M12 16h.01"/></svg>';
+  el.innerHTML = icon + '<div><div class="msg-title">' + title + '</div><div class="msg-body">' + body + '</div></div>';
+  stack.appendChild(el);
+  setTimeout(() => { el.style.opacity = "0"; el.style.transition = "opacity .3s ease"; setTimeout(()=>el.remove(), 300); }, 5200);
+}
+
+function bytesFromTarget(value, unit){
+  const n = parseFloat(value);
+  if (isNaN(n) || n <= 0) return null;
+  return unit === "MB" ? Math.round(n * 1024 * 1024) : Math.round(n * 1024);
+}
+
+// yield control to the browser so the UI can repaint during heavy loops
+function nextFrame(){ return new Promise(r => requestAnimationFrame(() => setTimeout(r, 0))); }
+
+const ACCEPTED_IMAGE_TYPES = ["image/jpeg", "image/jpg", "image/pjpeg", "image/png", "image/webp"];
+const ACCEPTED_IMAGE_EXT = [".jpg", ".jpeg", ".png", ".webp"];
+function hasAcceptedImageExt(name){
+  const lower = (name || "").toLowerCase();
+  return ACCEPTED_IMAGE_EXT.some(ext => lower.endsWith(ext));
+}
+const MAX_IMAGE_DIMENSION = 6000; // guard against runaway canvases
+const MAX_FILE_SIZE = 60 * 1024 * 1024; // 60MB safety ceiling per file
+
+const PRESETS_KB = [50, 100, 200, 500, 1024, 2048]; // last two are 1MB / 2MB expressed in KB
+function presetLabel(kb){ return kb >= 1024 ? (kb/1024) + " MB" : kb + " KB"; }
+
+/* ============================================================
+   1. TAB SWITCHING
+============================================================ */
+$$(".tab-btn").forEach(btn => {
+  btn.addEventListener("click", () => {
+    $$(".tab-btn").forEach(b => b.classList.remove("active"));
+    $$(".panel").forEach(p => p.classList.remove("active"));
+    btn.classList.add("active");
+    $("#panel-" + btn.dataset.tab).classList.add("active");
+  });
+});
+
+/* ============================================================
+   2. PRESET SIZE BUTTONS (shared builder)
+============================================================ */
+function buildPresetRow(container, inputEl, unitToggleEl, onChange){
+  PRESETS_KB.forEach(kb => {
+    const b = document.createElement("button");
+    b.className = "preset-btn";
+    b.textContent = presetLabel(kb);
+    b.dataset.kb = kb;
+    b.addEventListener("click", () => {
+      $$(".preset-btn", container).forEach(x => x.classList.remove("active"));
+      b.classList.add("active");
+      if (kb >= 1024){
+        inputEl.value = kb/1024;
+        setUnit(unitToggleEl, "MB");
+      } else {
+        inputEl.value = kb;
+        setUnit(unitToggleEl, "KB");
+      }
+      onChange && onChange();
+    });
+    container.appendChild(b);
+  });
+  const customB = document.createElement("button");
+  customB.className = "preset-btn";
+  customB.textContent = "Custom";
+  customB.addEventListener("click", () => {
+    $$(".preset-btn", container).forEach(x => x.classList.remove("active"));
+    customB.classList.add("active");
+    inputEl.focus();
+  });
+  container.appendChild(customB);
+}
+function setUnit(toggleEl, unit){
+  $$(".unit-btn", toggleEl).forEach(b => b.classList.toggle("active", b.dataset.unit === unit));
+}
+function wireUnitToggle(toggleEl, onChange){
+  $$(".unit-btn", toggleEl).forEach(b => b.addEventListener("click", () => {
+    $$(".unit-btn", toggleEl).forEach(x => x.classList.remove("active"));
+    b.classList.add("active");
+    onChange && onChange();
+  }));
+}
+function currentUnit(toggleEl){
+  const active = $(".unit-btn.active", toggleEl);
+  return active ? active.dataset.unit : "KB";
+}
+function clearPresetActive(container){ $$(".preset-btn", container).forEach(x => x.classList.remove("active")); }
+
+const presetRow1 = $("#preset-row-1"), input1 = $("#target-size-input-1"), unitToggle1 = $("#unit-toggle-1");
+const presetRow2 = $("#preset-row-2"), input2 = $("#target-size-input-2"), unitToggle2 = $("#unit-toggle-2");
+buildPresetRow(presetRow1, input1, unitToggle1);
+buildPresetRow(presetRow2, input2, unitToggle2);
+wireUnitToggle(unitToggle1, () => clearPresetActive(presetRow1));
+wireUnitToggle(unitToggle2, () => clearPresetActive(presetRow2));
+input1.addEventListener("input", () => clearPresetActive(presetRow1));
+input2.addEventListener("input", () => clearPresetActive(presetRow2));
+
+/* ============================================================
+   3. IMAGE → PDF : state + upload + reorder + rotate + delete
+============================================================ */
+let images = []; // { id, file, url, rotation, width, height }
+let dragSrcId = null;
+
+const imgGrid = $("#img-grid");
+const imgDropzone = $("#img-dropzone");
+const imgInput = $("#img-input");
+
+function uid(){ return Math.random().toString(36).slice(2) + Date.now().toString(36); }
+
+imgDropzone.addEventListener("click", () => imgInput.click());
+["dragenter","dragover"].forEach(ev => imgDropzone.addEventListener(ev, e => { e.preventDefault(); imgDropzone.classList.add("drag"); }));
+["dragleave","drop"].forEach(ev => imgDropzone.addEventListener(ev, e => { e.preventDefault(); imgDropzone.classList.remove("drag"); }));
+imgDropzone.addEventListener("drop", e => handleImageFiles(e.dataTransfer.files));
+imgInput.addEventListener("change", e => { handleImageFiles(e.target.files); imgInput.value = ""; });
+
+function handleImageFiles(fileList){
+  const files = Array.from(fileList || []);
+  if (!files.length) return;
+  let added = 0, rejected = [];
+  files.forEach(file => {
+    if (!ACCEPTED_IMAGE_TYPES.includes(file.type) && !hasAcceptedImageExt(file.name)){
+      rejected.push(file.name + " (unsupported format)");
+      return;
+    }
+    if (file.size > MAX_FILE_SIZE){
+      rejected.push(file.name + " (file too large)");
+      return;
+    }
+    if (file.size === 0){
+      rejected.push(file.name + " (empty file)");
+      return;
+    }
+    const url = URL.createObjectURL(file);
+    const img = new Image();
+    img.onload = () => {
+      if (img.naturalWidth === 0 || img.naturalHeight === 0){
+        toast("error", "Corrupted image", file.name + " could not be read and was skipped.");
+        URL.revokeObjectURL(url);
+        return;
+      }
+      images.push({ id: uid(), file, url, rotation: 0, width: img.naturalWidth, height: img.naturalHeight });
+      renderImageGrid();
+    };
+    img.onerror = () => {
+      toast("error", "Corrupted image", file.name + " could not be read and was skipped.");
+      URL.revokeObjectURL(url);
+    };
+    img.src = url;
+    added++;
+  });
+  if (rejected.length){
+    toast("error", "Some files were skipped", rejected.slice(0,3).join(", ") + (rejected.length>3 ? " and more…" : ""));
+  }
+}
+
+function renderImageGrid(){
+  imgGrid.innerHTML = "";
+  const toolbar = $("#img-toolbar");
+  const hint = $("#img-empty-hint");
+  if (!images.length){
+    toolbar.style.display = "none";
+    hint.style.display = "none";
+    return;
+  }
+  toolbar.style.display = "flex";
+  hint.style.display = "block";
+  $("#img-count").textContent = images.length + (images.length === 1 ? " image" : " images");
+
+  images.forEach((im, idx) => {
+    const tile = document.createElement("div");
+    tile.className = "img-tile";
+    tile.draggable = true;
+    tile.dataset.id = im.id;
+
+    const imgEl = document.createElement("img");
+    imgEl.src = im.url;
+    imgEl.style.transform = "rotate(" + im.rotation + "deg)";
+    if (im.rotation === 90 || im.rotation === 270){ imgEl.style.objectFit = "contain"; imgEl.style.background = "#f2f6f8"; }
+
+    const badge = document.createElement("div");
+    badge.className = "order-badge";
+    badge.textContent = "#" + (idx+1);
+
+    const actions = document.createElement("div");
+    actions.className = "tile-actions";
+    actions.innerHTML =
+      '<div class="grp">' +
+        '<button class="tile-btn" data-act="left" title="Move earlier" ' + (idx===0?'disabled':'') + '><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><path d="M15 18l-6-6 6-6"/></svg></button>' +
+        '<button class="tile-btn" data-act="right" title="Move later" ' + (idx===images.length-1?'disabled':'') + '><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><path d="M9 18l6-6-6-6"/></svg></button>' +
+      '</div>' +
+      '<div class="grp">' +
+        '<button class="tile-btn" data-act="rotate" title="Rotate 90°"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12a9 9 0 1 1-3-6.7"/><path d="M21 3v6h-6"/></svg></button>' +
+        '<button class="tile-btn danger" data-act="delete" title="Delete"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2m3 0-1 14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2L4 6"/></svg></button>' +
+      '</div>';
+
+    const leftBtn = actions.querySelector('[data-act="left"]');
+    const rightBtn = actions.querySelector('[data-act="right"]');
+    if (leftBtn) leftBtn.addEventListener("click", (e) => {
+      e.stopPropagation();
+      const i = images.findIndex(x => x.id === im.id);
+      if (i > 0){ [images[i-1], images[i]] = [images[i], images[i-1]]; renderImageGrid(); }
+    });
+    if (rightBtn) rightBtn.addEventListener("click", (e) => {
+      e.stopPropagation();
+      const i = images.findIndex(x => x.id === im.id);
+      if (i < images.length-1){ [images[i+1], images[i]] = [images[i], images[i+1]]; renderImageGrid(); }
+    });
+    actions.querySelector('[data-act="rotate"]').addEventListener("click", (e) => {
+      e.stopPropagation();
+      im.rotation = (im.rotation + 90) % 360;
+      renderImageGrid();
+    });
+    actions.querySelector('[data-act="delete"]').addEventListener("click", (e) => {
+      e.stopPropagation();
+      URL.revokeObjectURL(im.url);
+      images = images.filter(x => x.id !== im.id);
+      renderImageGrid();
+    });
+
+    tile.appendChild(imgEl);
+    tile.appendChild(badge);
+    tile.appendChild(actions);
+
+    // drag reorder
+    tile.addEventListener("dragstart", () => { dragSrcId = im.id; tile.classList.add("dragging"); });
+    tile.addEventListener("dragend", () => { tile.classList.remove("dragging"); $$(".img-tile").forEach(t => t.classList.remove("drop-target")); });
+    tile.addEventListener("dragover", e => { e.preventDefault(); tile.classList.add("drop-target"); });
+    tile.addEventListener("dragleave", () => tile.classList.remove("drop-target"));
+    tile.addEventListener("drop", e => {
+      e.preventDefault();
+      tile.classList.remove("drop-target");
+      if (!dragSrcId || dragSrcId === im.id) return;
+      const fromIdx = images.findIndex(x => x.id === dragSrcId);
+      const toIdx = images.findIndex(x => x.id === im.id);
+      const [moved] = images.splice(fromIdx, 1);
+      images.splice(toIdx, 0, moved);
+      renderImageGrid();
+    });
+
+    imgGrid.appendChild(tile);
+  });
+}
+
+$("#clear-images").addEventListener("click", () => {
+  images.forEach(im => URL.revokeObjectURL(im.url));
+  images = [];
+  renderImageGrid();
+});
+
+/* ============================================================
+   4. PDF → PDF : upload state
+============================================================ */
+let sourcePdfFile = null;
+const pdfDropzone = $("#pdf-dropzone");
+const pdfInput = $("#pdf-input");
+const pdfChipWrap = $("#pdf-file-chip-wrap");
+
+pdfDropzone.addEventListener("click", () => pdfInput.click());
+["dragenter","dragover"].forEach(ev => pdfDropzone.addEventListener(ev, e => { e.preventDefault(); pdfDropzone.classList.add("drag"); }));
+["dragleave","drop"].forEach(ev => pdfDropzone.addEventListener(ev, e => { e.preventDefault(); pdfDropzone.classList.remove("drag"); }));
+pdfDropzone.addEventListener("drop", e => handlePdfFile(e.dataTransfer.files[0]));
+pdfInput.addEventListener("change", e => { handlePdfFile(e.target.files[0]); pdfInput.value = ""; });
+
+function handlePdfFile(file){
+  if (!file) return;
+  if (file.type !== "application/pdf" && !file.name.toLowerCase().endsWith(".pdf")){
+    toast("error", "Unsupported format", file.name + " is not a PDF file.");
+    return;
+  }
+  if (file.size === 0){
+    toast("error", "Empty file", file.name + " has no content.");
+    return;
+  }
+  if (file.size > MAX_FILE_SIZE){
+    toast("error", "File too large", "Please use a PDF under " + fmtBytes(MAX_FILE_SIZE) + ".");
+    return;
+  }
+  sourcePdfFile = file;
+  renderPdfChip();
+}
+
+function renderPdfChip(){
+  if (!sourcePdfFile){ pdfChipWrap.innerHTML = ""; return; }
+  pdfChipWrap.innerHTML =
+    '<div class="file-chip">' +
+      '<div class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 2h9l5 5v13a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2z"/><path d="M14 2v5h5"/></svg></div>' +
+      '<div class="meta"><div class="name">' + escapeHtml(sourcePdfFile.name) + '</div><div class="sub">' + fmtBytes(sourcePdfFile.size) + '</div></div>' +
+      '<button id="remove-pdf-chip" title="Remove"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 6 6 18M6 6l12 12"/></svg></button>' +
+    '</div>';
+  $("#remove-pdf-chip").addEventListener("click", () => { sourcePdfFile = null; renderPdfChip(); });
+}
+function escapeHtml(s){ const d = document.createElement("div"); d.textContent = s; return d.innerHTML; }
+
+/* ============================================================
+   5. CANVAS HELPERS — resize / rotate / encode
+============================================================ */
+function loadHtmlImage(url){
+  return new Promise((resolve, reject) => {
+    const img = new Image();
+    img.onload = () => resolve(img);
+    img.onerror = () => reject(new Error("Failed to decode image"));
+    img.src = url;
+  });
+}
+
+// draws source image (or canvas) onto a canvas at `scale`, applying rotation (deg, multiple of 90)
+function renderToCanvas(source, srcW, srcH, rotationDeg, scale){
+  const rad = (rotationDeg % 360) * Math.PI / 180;
+  const rotated90 = (rotationDeg % 180) !== 0;
+  const outW = Math.max(1, Math.round((rotated90 ? srcH : srcW) * scale));
+  const outH = Math.max(1, Math.round((rotated90 ? srcW : srcH) * scale));
+  const canvas = document.createElement("canvas");
+  canvas.width = outW;
+  canvas.height = outH;
+  const ctx = canvas.getContext("2d");
+  ctx.imageSmoothingEnabled = true;
+  ctx.imageSmoothingQuality = "high";
+  // JPEG has no alpha channel — paint a white backdrop first so transparent
+  // PNG/WEBP areas turn white instead of black once encoded.
+  ctx.fillStyle = "#ffffff";
+  ctx.fillRect(0, 0, outW, outH);
+  ctx.save();
+  ctx.translate(outW/2, outH/2);
+  ctx.rotate(rad);
+  const drawW = srcW * scale, drawH = srcH * scale;
+  ctx.drawImage(source, -drawW/2, -drawH/2, drawW, drawH);
+  ctx.restore();
+  return canvas;
+}
+
+function canvasToJpegBytes(canvas, quality){
+  return new Promise((resolve, reject) => {
+    canvas.toBlob(blob => {
+      if (!blob){ reject(new Error("Encoding failed")); return; }
+      blob.arrayBuffer().then(buf => resolve(new Uint8Array(buf)));
+    }, "image/jpeg", quality);
+  });
+}
+
+/* ============================================================
+   6. COMPRESSION ENGINE (shared search logic)
+   Given a function buildAtLevel(t) -> Promise<Uint8Array>  (t in [0,1], 0=best quality, 1=most compressed)
+   binary-search t to land the resulting byte length within tolerance of targetBytes.
+============================================================ */
+async function searchForTargetSize(targetBytes, buildAtLevel, onProbe, maxIterations){
+  maxIterations = maxIterations || 10;
+  const tolerance = 0.05;
+
+  // Probe both ends first
+  const lowBytes = await buildAtLevel(0);   // best quality, largest
+  onProbe && await onProbe(0, lowBytes.length);
+  if (lowBytes.length <= targetBytes * (1+tolerance)){
+    // Even best quality already fits target (target is generous) — use best quality
+    return { bytes: lowBytes, level: 0, achieved: lowBytes.length, hitTarget: true };
+  }
+
+  const highBytes = await buildAtLevel(1);  // most compressed, smallest achievable
+  onProbe && await onProbe(1, highBytes.length);
+  if (highBytes.length > targetBytes * (1+tolerance)){
+    // even maximum compression can't reach target — return smallest we can make
+    return { bytes: highBytes, level: 1, achieved: highBytes.length, hitTarget: false, floor: true };
+  }
+
+  let lo = 0, hi = 1, best = highBytes, bestDiff = Math.abs(highBytes.length - targetBytes);
+  if (Math.abs(lowBytes.length - targetBytes) < bestDiff){ best = lowBytes; bestDiff = Math.abs(lowBytes.length - targetBytes); }
+
+  for (let i = 0; i < maxIterations; i++){
+    const mid = (lo + hi) / 2;
+    const bytes = await buildAtLevel(mid);
+    onProbe && await onProbe(mid, bytes.length);
+    const diff = Math.abs(bytes.length - targetBytes);
+    if (diff < bestDiff){ bestDiff = diff; best = bytes; }
+
+    if (bytes.length > targetBytes * (1+tolerance)){
+      lo = mid; // still too big -> compress more
+    } else if (bytes.length < targetBytes * (1-tolerance)){
+      hi = mid; // too small -> allow more quality
+    } else {
+      return { bytes, level: mid, achieved: bytes.length, hitTarget: true };
+    }
+  }
+  const hitTarget = bestDiff <= targetBytes * tolerance;
+  return { bytes: best, level: hi, achieved: best.length, hitTarget };
+}
+
+// maps a compression level t in [0,1] to a quality + scale pair
+function levelToParams(t){
+  const MIN_Q = 0.22, MAX_Q = 0.94;
+  const MIN_S = 0.35, MAX_S = 1.0;
+  // quality drops across the first ~70% of the range, resolution drops mostly in the last ~50%
+  const quality = MAX_Q - t * (MAX_Q - MIN_Q);
+  const scaleT = Math.max(0, (t - 0.15) / 0.85);
+  const scale = MAX_S - scaleT * (MAX_S - MIN_S);
+  return { quality, scale };
+}
+
+/* ============================================================
+   7. IMAGE → PDF : build + dashboard wiring
+============================================================ */
+const dash1 = {
+  card: $("#progress-card-1"), fill: $("#progress-fill-1"), stage: $("#progress-stage-1"), pct: $("#progress-pct-1"),
+  pages: $("#live-pages-1"), quality: $("#live-quality-1"), res: $("#live-res-1"), size: $("#live-size-1"),
+};
+const dash2 = {
+  card: $("#progress-card-2"), fill: $("#progress-fill-2"), stage: $("#progress-stage-2"), pct: $("#progress-pct-2"),
+  pages: $("#live-pages-2"), quality: $("#live-quality-2"), res: $("#live-res-2"), size: $("#live-size-2"),
+};
+
+function setDash(dash, { stage, pct, pages, quality, res, size }){
+  if (stage !== undefined) dash.stage.textContent = stage;
+  if (pct !== undefined){ dash.pct.textContent = Math.round(pct) + "%"; dash.fill.style.width = Math.max(3,pct) + "%"; }
+  if (pages !== undefined) dash.pages.textContent = pages;
+  if (quality !== undefined) dash.quality.textContent = quality;
+  if (res !== undefined) dash.res.textContent = res;
+  if (size !== undefined) dash.size.textContent = size;
+}
+
+async function buildImagePdfAtLevel(level, progressCb){
+  const { quality, scale } = levelToParams(level);
+  const pdfDoc = await PDFDocument.create();
+  for (let i = 0; i < images.length; i++){
+    const im = images[i];
+    const htmlImg = await loadHtmlImage(im.url);
+    const canvas = renderToCanvas(htmlImg, im.width, im.height, im.rotation, scale);
+    const jpegBytes = await canvasToJpegBytes(canvas, quality);
+    const embedded = await pdfDoc.embedJpg(jpegBytes);
+    const page = pdfDoc.addPage([embedded.width, embedded.height]);
+    page.drawImage(embedded, { x: 0, y: 0, width: embedded.width, height: embedded.height });
+    if (progressCb) await progressCb(i+1, images.length);
+    await nextFrame();
+  }
+  pdfDoc.setTitle("");
+  pdfDoc.setAuthor("");
+  pdfDoc.setSubject("");
+  pdfDoc.setKeywords([]);
+  pdfDoc.setProducer("Smart PDF Studio Pro");
+  pdfDoc.setCreator("Smart PDF Studio Pro");
+  const bytes = await pdfDoc.save({ useObjectStreams: true });
+  return { bytes, quality, scale };
+}
+
+$("#generate-btn-1").addEventListener("click", async () => {
+  if (!images.length){
+    toast("error", "No images added", "Add at least one image before generating a PDF.");
+    return;
+  }
+  const unit = currentUnit(unitToggle1);
+  const targetBytes = bytesFromTarget(input1.value, unit);
+  if (!targetBytes){
+    toast("error", "Invalid target size", "Enter a target size greater than 0, e.g. 100 KB.");
+    return;
+  }
+  await runImageToPdf(targetBytes);
+});
+
+async function runImageToPdf(targetBytes){
+  const btn = $("#generate-btn-1");
+  btn.disabled = true; btn.classList.add("busy");
+  dash1.card.style.display = "block";
+  $("#result-card-1").style.display = "none";
+  setDash(dash1, { stage: "Rendering pages…", pct: 3, pages: images.length, quality: "–", res: "–", size: "–" });
+  dash1.card.scrollIntoView({ behavior:"smooth", block:"nearest" });
+
+  try {
+    let probeCount = 0;
+    const result = await searchForTargetSize(
+      targetBytes,
+      async (t) => {
+        probeCount++;
+        setDash(dash1, { stage: "Testing compression level " + probeCount + "…", pct: Math.min(92, 10 + probeCount*11) });
+        const levelParams = levelToParams(t);
+        const { bytes, quality, scale } = await buildImagePdfAtLevel(t, async (done, total) => {
+          setDash(dash1, {
+            quality: Math.round(levelParams.quality*100) + "%",
+            res: Math.round(levelParams.scale*100) + "%",
+            size: "…",
+          });
+        });
+        setDash(dash1, { quality: Math.round(quality*100) + "%", res: Math.round(scale*100) + "%", size: fmtBytes(bytes.length) });
+        return bytes;
+      },
+      null,
+      9
+    );
+
+    setDash(dash1, { stage: result.hitTarget ? "Target size reached" : "Closest achievable size reached", pct: 100 });
+    const finalParams = levelToParams(result.level);
+    setDash(dash1, { quality: Math.round(finalParams.quality*100) + "%", res: Math.round(finalParams.scale*100) + "%", size: fmtBytes(result.achieved) });
+
+    const originalTotal = images.reduce((s, im) => s + im.file.size, 0);
+    showResult1(result.bytes, originalTotal, targetBytes, result);
+  } catch (err){
+    console.error(err);
+    toast("error", "Compression failed", err.message || "Something went wrong while building the PDF.");
+    dash1.card.style.display = "none";
+  } finally {
+    btn.disabled = false; btn.classList.remove("busy");
+  }
+}
+
+function gaugeColor(pctOfTarget){
+  if (pctOfTarget <= 1.05) return "#12b981";
+  if (pctOfTarget <= 1.25) return "#e0a13b";
+  return "#e0563b";
+}
+
+function buildResultCardHtml(finalBytesLen, originalTotal, targetBytes, result, downloadName){
+  const saved = originalTotal - finalBytesLen;
+  const savedPct = originalTotal > 0 ? Math.max(0, Math.round((saved/originalTotal)*100)) : 0;
+  const targetHitPct = (finalBytesLen / targetBytes) * 100;
+  const circumference = 2 * Math.PI * 54;
+  const gaugePct = Math.max(0, Math.min(100, savedPct));
+  const dashOffset = circumference * (1 - gaugePct/100);
+  const color = gaugeColor(finalBytesLen/targetBytes);
+  const statusBadge = result.hitTarget
+    ? '<div class="badge-status ok"><svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="3"><path d="m5 12 5 5 9-9"/></svg> Within ±5% of target</div>'
+    : '<div class="badge-status warn"><svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="3"><circle cx="12" cy="12" r="10"/><path d="M12 8v4M12 16h.01"/></svg> ' + (result.floor ? "Maximum compression applied — could not go lower" : "Closest achievable size") + '</div>';
+
+  return (
+    '<div class="card-title"><span class="num">✓</span> Download center</div>' +
+    '<div class="gauge-wrap">' +
+      '<div class="gauge"><svg viewBox="0 0 120 120">' +
+        '<circle class="gauge-bg" cx="60" cy="60" r="54"/>' +
+        '<circle class="gauge-fill" cx="60" cy="60" r="54" stroke="' + color + '" stroke-dasharray="' + circumference + '" stroke-dashoffset="' + dashOffset + '"/>' +
+      '</svg><div class="gauge-center"><div class="pct">' + savedPct + '%</div><div class="sub">saved</div></div></div>' +
+      '<div class="gauge-meta">' +
+        '<div class="row"><span class="k">Original size</span><span class="v">' + fmtBytes(originalTotal) + '</span></div>' +
+        '<div class="row"><span class="k">Final size</span><span class="v">' + fmtBytes(finalBytesLen) + '</span></div>' +
+        '<div class="row"><span class="k">Target size</span><span class="v">' + fmtBytes(targetBytes) + '</span></div>' +
+        '<div class="row"><span class="k">Compression ratio</span><span class="v">' + (originalTotal>0 ? (originalTotal/finalBytesLen).toFixed(2)+"x" : "–") + '</span></div>' +
+        statusBadge +
+      '</div>' +
+    '</div>' +
+    '<div class="dl-grid" style="margin-top:22px;">' +
+      '<div class="dl-stats">' +
+        '<div class="dl-stat"><div class="label">Space saved</div><div class="val">' + fmtBytes(Math.max(0,saved)) + '</div></div>' +
+        '<div class="dl-stat"><div class="label">Accuracy vs target</div><div class="val">' + Math.round(targetHitPct) + '%</div></div>' +
+      '</div>' +
+      '<div class="dl-actions">' +
+        '<button class="btn-primary" id="__DL_MAIN__"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3v12m0 0 4-4m-4 4-4-4"/><path d="M4 19h16"/></svg> Download PDF (' + downloadName + ')</button>' +
+        '<div style="display:flex; gap:10px;">' +
+          '<button class="btn-secondary" id="__DL_AGAIN__" style="flex:1;"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3v12m0 0 4-4m-4 4-4-4"/><path d="M4 19h16"/></svg> Download again</button>' +
+          '<button class="btn-secondary" id="__DL_NEW__" style="flex:1;"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12a9 9 0 1 1-3-6.7"/><path d="M21 3v6h-6"/></svg> Start new</button>' +
+        '</div>' +
+      '</div>' +
+    '</div>'
+  );
+}
+
+function triggerDownload(bytes, filename){
+  const blob = new Blob([bytes], { type: "application/pdf" });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url; a.download = filename;
+  document.body.appendChild(a); a.click(); document.body.removeChild(a);
+  setTimeout(() => URL.revokeObjectURL(url), 4000);
+}
+
+function showResult1(bytes, originalTotal, targetBytes, result){
+  const card = $("#result-card-1");
+  const filename = "smart-pdf-studio-" + Date.now() + ".pdf";
+  card.innerHTML = buildResultCardHtml(bytes.length, originalTotal, targetBytes, result, filename);
+  card.style.display = "block";
+  card.scrollIntoView({ behavior:"smooth", block:"nearest" });
+  $("#__DL_MAIN__", card).addEventListener("click", () => triggerDownload(bytes, filename));
+  $("#__DL_AGAIN__", card).addEventListener("click", () => triggerDownload(bytes, filename));
+  $("#__DL_NEW__", card).addEventListener("click", () => {
+    images.forEach(im => URL.revokeObjectURL(im.url));
+    images = [];
+    renderImageGrid();
+    card.style.display = "none";
+    dash1.card.style.display = "none";
+    input1.value = ""; clearPresetActive(presetRow1);
+    window.scrollTo({ top: 0, behavior:"smooth" });
+  });
+  toast("success", "PDF ready", result.hitTarget ? "Landed within ±5% of your target size." : "Reached the closest possible size to your target.");
+}
+
+/* ============================================================
+   8. PDF → PDF COMPRESSION
+============================================================ */
+async function rasterizeSourcePdf(file){
+  const buf = await file.arrayBuffer();
+  let pdf;
+  try {
+    pdf = await pdfjsLib.getDocument({ data: buf }).promise;
+  } catch (e){
+    throw new Error("This PDF appears to be corrupted or password-protected and could not be opened.");
+  }
+  if (pdf.numPages === 0) throw new Error("This PDF has no pages.");
+  const pages = [];
+  for (let i = 1; i <= pdf.numPages; i++){
+    const page = await pdf.getPage(i);
+    const viewport = page.getViewport({ scale: 2.0 }); // base render at 2x for quality headroom
+    const canvas = document.createElement("canvas");
+    canvas.width = Math.min(viewport.width, MAX_IMAGE_DIMENSION);
+    canvas.height = Math.min(viewport.height, MAX_IMAGE_DIMENSION);
+    const ctx = canvas.getContext("2d");
+    await page.render({ canvasContext: ctx, viewport: page.getViewport({ scale: canvas.width / page.getViewport({scale:1}).width }) }).promise;
+    pages.push({ canvas, widthPt: page.view[2]-page.view[0], heightPt: page.view[3]-page.view[1] });
+  }
+  return pages;
+}
+
+async function buildPdfFromRasterAtLevel(rasterPages, level){
+  const { quality, scale } = levelToParams(level);
+  const pdfDoc = await PDFDocument.create();
+  for (let i = 0; i < rasterPages.length; i++){
+    const rp = rasterPages[i];
+    const targetW = Math.max(1, Math.round(rp.canvas.width * scale));
+    const targetH = Math.max(1, Math.round(rp.canvas.height * scale));
+    const scaledCanvas = document.createElement("canvas");
+    scaledCanvas.width = targetW; scaledCanvas.height = targetH;
+    const ctx = scaledCanvas.getContext("2d");
+    ctx.imageSmoothingEnabled = true; ctx.imageSmoothingQuality = "high";
+    ctx.drawImage(rp.canvas, 0, 0, targetW, targetH);
+    const jpegBytes = await canvasToJpegBytes(scaledCanvas, quality);
+    const embedded = await pdfDoc.embedJpg(jpegBytes);
+    const page = pdfDoc.addPage([rp.widthPt, rp.heightPt]);
+    page.drawImage(embedded, { x: 0, y: 0, width: rp.widthPt, height: rp.heightPt });
+    await nextFrame();
+  }
+  pdfDoc.setProducer("Smart PDF Studio Pro");
+  pdfDoc.setCreator("Smart PDF Studio Pro");
+  const bytes = await pdfDoc.save({ useObjectStreams: true });
+  return { bytes, quality, scale };
+}
+
+$("#generate-btn-2").addEventListener("click", async () => {
+  if (!sourcePdfFile){
+    toast("error", "No PDF uploaded", "Upload a PDF file before compressing.");
+    return;
+  }
+  const unit = currentUnit(unitToggle2);
+  const targetBytes = bytesFromTarget(input2.value, unit);
+  if (!targetBytes){
+    toast("error", "Invalid target size", "Enter a target size greater than 0, e.g. 250 KB.");
+    return;
+  }
+  await runPdfToPdf(targetBytes);
+});
+
+async function runPdfToPdf(targetBytes){
+  const btn = $("#generate-btn-2");
+  btn.disabled = true; btn.classList.add("busy");
+  dash2.card.style.display = "block";
+  $("#result-card-2").style.display = "none";
+  setDash(dash2, { stage: "Reading PDF…", pct: 4, pages: "…", quality: "–", res: "–", size: "–" });
+  dash2.card.scrollIntoView({ behavior:"smooth", block:"nearest" });
+
+  try {
+    const originalSize = sourcePdfFile.size;
+    setDash(dash2, { stage: "Rendering pages to canvas…", pct: 12 });
+    const rasterPages = await rasterizeSourcePdf(sourcePdfFile);
+    setDash(dash2, { pages: rasterPages.length, stage: "Analyzing compression levels…", pct: 22 });
+
+    let probeCount = 0;
+    const result = await searchForTargetSize(
+      targetBytes,
+      async (t) => {
+        probeCount++;
+        setDash(dash2, { stage: "Testing compression level " + probeCount + "…", pct: Math.min(94, 25 + probeCount*9) });
+        const { bytes, quality, scale } = await buildPdfFromRasterAtLevel(rasterPages, t);
+        setDash(dash2, { quality: Math.round(quality*100) + "%", res: Math.round(scale*100) + "%", size: fmtBytes(bytes.length) });
+        return bytes;
+      },
+      null,
+      9
+    );
+
+    setDash(dash2, { stage: result.hitTarget ? "Target size reached" : "Closest achievable size reached", pct: 100 });
+    const finalParams = levelToParams(result.level);
+    setDash(dash2, { quality: Math.round(finalParams.quality*100) + "%", res: Math.round(finalParams.scale*100) + "%", size: fmtBytes(result.achieved) });
+
+    showResult2(result.bytes, originalSize, targetBytes, result);
+  } catch (err){
+    console.error(err);
+    toast("error", "Compression failed", err.message || "Something went wrong while compressing the PDF.");
+    dash2.card.style.display = "none";
+  } finally {
+    btn.disabled = false; btn.classList.remove("busy");
+  }
+}
+
+function showResult2(bytes, originalTotal, targetBytes, result){
+  const card = $("#result-card-2");
+  const baseName = sourcePdfFile ? sourcePdfFile.name.replace(/\.pdf$/i, "") : "document";
+  const filename = baseName + "-compressed.pdf";
+  card.innerHTML = buildResultCardHtml(bytes.length, originalTotal, targetBytes, result, filename);
+  card.style.display = "block";
+  card.scrollIntoView({ behavior:"smooth", block:"nearest" });
+  $("#__DL_MAIN__", card).addEventListener("click", () => triggerDownload(bytes, filename));
+  $("#__DL_AGAIN__", card).addEventListener("click", () => triggerDownload(bytes, filename));
+  $("#__DL_NEW__", card).addEventListener("click", () => {
+    sourcePdfFile = null;
+    renderPdfChip();
+    card.style.display = "none";
+    dash2.card.style.display = "none";
+    input2.value = ""; clearPresetActive(presetRow2);
+    window.scrollTo({ top: 0, behavior:"smooth" });
+  });
+  toast("success", "PDF compressed", result.hitTarget ? "Landed within ±5% of your target size." : "Reached the closest possible size to your target.");
+}
+
+/* ============================================================
+   9. GLOBAL ERROR SAFETY NET
+============================================================ */
+/* ============================================================
+   10. PWA: SERVICE WORKER + INSTALL PROMPT
+============================================================ */
+if ("serviceWorker" in navigator){
+  window.addEventListener("load", () => {
+    navigator.serviceWorker.register("sw.js").catch((err) => console.warn("SW registration failed:", err));
+  });
+}
+
+let deferredInstallPrompt = null;
+window.addEventListener("beforeinstallprompt", (e) => {
+  e.preventDefault();
+  deferredInstallPrompt = e;
+  showInstallPill();
+});
+window.addEventListener("appinstalled", () => {
+  deferredInstallPrompt = null;
+  const pill = document.getElementById("install-pill");
+  if (pill) pill.remove();
+});
+
+function showInstallPill(){
+  if (document.getElementById("install-pill")) return;
+  const pill = document.createElement("button");
+  pill.id = "install-pill";
+  pill.textContent = "⬇ Install app";
+  pill.style.cssText = "position:fixed; bottom:20px; right:20px; z-index:998; padding:12px 18px; border-radius:999px; font-weight:700; font-size:13.5px; color:#fff; background:linear-gradient(135deg,#3b9ce0,#12b0a6 52%,#12b981); box-shadow:0 14px 30px -12px rgba(18,150,150,0.6); cursor:pointer;";
+  pill.addEventListener("click", async () => {
+    if (!deferredInstallPrompt) return;
+    pill.remove();
+    deferredInstallPrompt.prompt();
+    await deferredInstallPrompt.userChoice;
+    deferredInstallPrompt = null;
+  });
+  document.body.appendChild(pill);
+}
+
+window.addEventListener("error", (e) => {
+  console.error(e.error || e.message);
+});
+window.addEventListener("unhandledrejection", (e) => {
+  console.error(e.reason);
+});
+
+})();
+</script>
+</body>
+</html>
